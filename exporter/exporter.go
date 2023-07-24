@@ -233,6 +233,7 @@ func NewRedisExporter(redisURI string, opts Options) (*Exporter, error) {
 			// # Cluster
 			"cluster_stats_messages_sent":     "cluster_messages_sent_total",
 			"cluster_stats_messages_received": "cluster_messages_received_total",
+			"cluster_node_roles":              "cluster_node_roles",
 
 			// # Tile38
 			// based on https://tile38.com/commands/server/
@@ -601,6 +602,13 @@ func (e *Exporter) scrapeRedisHost(ch chan<- prometheus.Metric) error {
 	log.Debugf("Redis INFO ALL result: [%#v]", infoAll)
 
 	if strings.Contains(infoAll, "cluster_enabled:1") {
+
+		if clusterNodes, err := redis.String(doRedisCmd(c, "CLUSTER", "NODES")); err == nil {
+			e.extractClusterNodeMetric(ch, clusterNodes)
+		} else {
+			log.Errorf("Redis CLUSTER INFO err: %s", err)
+		}
+
 		if clusterInfo, err := redis.String(doRedisCmd(c, "CLUSTER", "INFO")); err == nil {
 			e.extractClusterInfoMetrics(ch, clusterInfo)
 

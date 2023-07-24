@@ -209,8 +209,38 @@ func (e *Exporter) extractClusterInfoMetrics(ch chan<- prometheus.Metric, info s
 	}
 }
 
+func (e *Exporter) extractClusterNodeMetric(ch chan<- prometheus.Metric, info string) {
+	lines := strings.Split(info, "\n")
+
+	for _, line := range lines {
+		nodeLabels := []string{"id", "address", "role"}
+		nodeLabelValues := []string{}
+		log.Debugf("info: %s", line)
+
+		split := strings.Split(line, " ")
+		if len(split) <= 1 {
+			continue
+		}
+		id := split[0]
+		addr := split[1] // ip address and port number
+		role := split[2] // role
+		nodeLabelValues = append(nodeLabelValues, id, addr, role)
+
+		e.metricDescriptions["cluster_node_roles"] = newMetricDescr(e.options.Namespace, "cluster_node_roles", "Roles of connected nodes", nodeLabels)
+
+		e.registerConstMetricGauge(
+			ch, "cluster_node_roles", 1.0,
+			nodeLabelValues...,
+		)
+	}
+
+	// fieldValue must be a FLOAT
+	// e.parseAndRegisterConstMetric(ch, "cluster node roles", "true")
+	// e.registerConstMetric(ch, "cluster_node_roles", rejectedCalls, prometheus.CounterValue, cmd)
+}
+
 /*
-	valid example: db0:keys=1,expires=0,avg_ttl=0,cached_keys=0
+valid example: db0:keys=1,expires=0,avg_ttl=0,cached_keys=0
 */
 func parseDBKeyspaceString(inputKey string, inputVal string) (keysTotal float64, keysExpiringTotal float64, avgTTL float64, keysCachedTotal float64, ok bool) {
 	log.Debugf("parseDBKeyspaceString inputKey: [%s] inputVal: [%s]", inputKey, inputVal)
@@ -258,8 +288,8 @@ func parseDBKeyspaceString(inputKey string, inputVal string) (keysTotal float64,
 }
 
 /*
-	slave0:ip=10.254.11.1,port=6379,state=online,offset=1751844676,lag=0
-	slave1:ip=10.254.11.2,port=6379,state=online,offset=1751844222,lag=0
+slave0:ip=10.254.11.1,port=6379,state=online,offset=1751844676,lag=0
+slave1:ip=10.254.11.2,port=6379,state=online,offset=1751844222,lag=0
 */
 func parseConnectedSlaveString(slaveName string, keyValues string) (offset float64, ip string, port string, state string, lag float64, ok bool) {
 	ok = false
