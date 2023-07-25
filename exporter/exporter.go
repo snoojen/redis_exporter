@@ -602,7 +602,6 @@ func (e *Exporter) scrapeRedisHost(ch chan<- prometheus.Metric) error {
 	log.Debugf("Redis INFO ALL result: [%#v]", infoAll)
 
 	if strings.Contains(infoAll, "cluster_enabled:1") {
-
 		if clusterNodes, err := redis.String(doRedisCmd(c, "CLUSTER", "NODES")); err == nil {
 			e.extractClusterNodeMetric(ch, clusterNodes)
 		} else {

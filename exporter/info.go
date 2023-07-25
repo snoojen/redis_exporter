@@ -213,18 +213,15 @@ func (e *Exporter) extractClusterNodeMetric(ch chan<- prometheus.Metric, info st
 	lines := strings.Split(info, "\n")
 
 	for _, line := range lines {
-		nodeLabels := []string{"id", "address", "role"}
-		nodeLabelValues := []string{}
 		log.Debugf("info: %s", line)
 
 		split := strings.Split(line, " ")
 		if len(split) <= 1 {
 			continue
 		}
-		id := split[0]
-		addr := split[1] // ip address and port number
-		role := split[2] // role
-		nodeLabelValues = append(nodeLabelValues, id, addr, role)
+
+		nodeLabels := []string{"id", "address", "role"}
+		nodeLabelValues := []string{split[0], split[1], split[2]}
 
 		e.metricDescriptions["cluster_node_roles"] = newMetricDescr(e.options.Namespace, "cluster_node_roles", "Roles of connected nodes", nodeLabels)
 
@@ -233,10 +230,6 @@ func (e *Exporter) extractClusterNodeMetric(ch chan<- prometheus.Metric, info st
 			nodeLabelValues...,
 		)
 	}
-
-	// fieldValue must be a FLOAT
-	// e.parseAndRegisterConstMetric(ch, "cluster node roles", "true")
-	// e.registerConstMetric(ch, "cluster_node_roles", rejectedCalls, prometheus.CounterValue, cmd)
 }
 
 /*
